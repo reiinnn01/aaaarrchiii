@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Base Converter</title>
+  <style>
+    body 
+    {
+      font-family: inter;
+      padding: 30px;
+      background: #111;
+      color: #eee;
+    }
+
+    input, select 
+    {
+      padding: 10px;
+      font-size: 16px;
+      margin: 5px 0;
+      width: 200px;
+      background: #222;
+      border: none; 
+      color: #eee;
+      font-family: inter;
+    }
+
+    .checkbox1
+    {
+      margin: 15px 0;
+      display: flex;
+      align-items: center;
+      font-size: 16px;
+      width: auto;
+    }
+
+    .output 
+    {
+      margin-top: 15px;
+    }
+
+    .box 
+    {
+      margin: 5px 0;
+      padding: 10px;
+      background: #222;
+      font-family: arial; 
+      border-radius: 5px;
+      font-size: 16px;
+    }
+
+    .error 
+    {
+      color: #ff6b6b;
+      margin-top: 10px;
+    }
+
+    .checkbox2
+    {
+      display: flex;       
+      align-items: center; 
+      gap: 8px;  
+    }
+  </style>
+</head>
+<body>
+  <h2>Base Converter</h2>
+
+  <input id="input" placeholder="Enter value" />
+  <br>
+
+  <label>From Base:</label>
+  <select id="baseSel">
+    <option value="2">2 (Binary)</option>
+    <option value="8">8 (Octal)</option>
+    <option value="10" selected>10 (Decimal)</option>
+  <option value="16">16 (Hex)</option>
+
+  </select>
+  <div class="checkbox2">
+    <label for="sign">Signed</label>
+    <input class="checkbox1" type="checkbox" id="sign" checked>
+  </div>
+  
+  <div class="output">
+    <div class="box">Base 2: <span id="b2">-</span></div>
+    <div class="box">Base 8: <span id="b8">-</span></div>
+    <div class="box">Base 10: <span id="b10">-</span></div>
+    <div class="box">Base 16: <span id="b16">-</span></div>
+  </div>
+  </q><div id="error" class="error"></div>
+
+  <script>
+    const input = document.getElementById("input");
+    const baseSel = document.getElementById("baseSel");
+    const myCheck = document.getElementById("sign");
+
+    const outputs = 
+    {
+      2: document.getElementById("b2"),
+      8: document.getElementById("b8"),
+      10: document.getElementById("b10"),
+      16: document.getElementById("b16"),
+    };
+
+    const errorDiv = document.getElementById("error");
+
+    function isValidForBase(value, base, sign) 
+    {
+      if (!value) { return false; }
+      const validChars = "0123456789ABCDEF".slice(0, base);
+      let dotCount = 0; 
+      let hasSign = false;
+
+      if (value[0] === "-") 
+      {
+        if (!sign || base ===8 || base ===16 || base ===2) 
+        {   
+            return false;
+        }
+        hasSign = true;
+      }
+
+      const stringToCheck = hasSign ? value.slice(1) : value;
+      if (!stringToCheck || stringToCheck === ".") return false;
+
+      return stringToCheck
+      .toUpperCase()
+      .split("")
+      .every((char) => 
+      {
+        if (char === ".") 
+        {
+          dotCount++;
+          return dotCount <= 1;
+        }
+        return validChars.includes(char);
+      });
+    }
+
+    //1 bit shit
+    function toDec(value, sign) 
+    {
+      let [int1, frac1] = value.split("."), int = int1 || "0",  frac = frac1 || "0";
+      let n = 0, p = 0, signed=sign, result=0, fracVal = 0;
+      if (signed && int[0] === "1") {n -= parseInt(int[0]);}
+      else {n = parseInt(int[0])}
+      p = int.length-1; 
+      if (int.length>1) {result = parseInt(int.slice(1), 2) ;}
+      
+      if (frac) 
+      {
+        for (let i = 0; i < frac.length; i++) 
+        {
+          let digit = parseInt(frac[i]);
+          fracVal += digit / Math.pow(2, i + 1);
+        }
+      } 
+      return fracVal ? result += fracVal + (n * Math.pow(2,p)) : result + (n * Math.pow(2,p));
+    }
+
+    //cleaaann
+    function toox(value, base, sign)
+    {
+      let signed= sign, [int1, frac1] = value.split("."), int = int1 || "0";
+      let neg=int[0], frac = frac1 || "0", miss = 0, index = 0;
+      if (base == 16) { index = 4;}
+      else { index = 3;}
+
+      if (frac && frac.length % index !==0)
+      {
+        miss = index - frac.length % index
+        frac = frac + "0".repeat(miss)
+      }
+
+      if (signed)
+      {
+        if (int1[0]==="1" && int.length % index !==0)
+        {
+          intmiss = index - int.length % index;
+          int = "1".repeat(intmiss) + int;
+        }
+      }
+
+      int = parseInt(int, 2).toString(base).toUpperCase();
+
+      if(signed && int1[0]==="0")
+        {
+          intmiss = index - int.length % index;
+          int = "0" + int;
+        }
+      
+      if (frac!==undefined)
+      {frac = parseInt(frac, 2).toString(base).toUpperCase();}
+      return frac ?  int + "." + frac : int  ; 
+    }
+
+    //fixxxxxxxxxx
+    function tobin(value, base, sign)
+    {
+      if (base==2)
+      { 
+        if (value.startsWith("-")) { value = value.slice(1)}
+        return value;
+      }
+      let signed=sign, result, [int1, frac1] = value.split(".");
+      let int = int1 || "0", frac = frac1 || "0";
+      let added=false, pls="", memo=0, deci=0, miss=0, intmiss=0;
+      if (base===10)
+        { 
+        if (frac!==undefined && frac !=="") {frac = parseFloat("0."+ frac)};
+        let whole=0; let fracstr="", i=0;
+        while(frac && frac>0 && i<32)
+        {
+            frac*=2;
+            whole = Math.floor(frac);
+            fracstr += whole.toString();
+            frac-=whole;
+            i++
+        } 
+        result = parseInt(int).toString(2);
+        let frac2 = frac1 ? frac1.toString().length : 0
+        if (signed && int.startsWith("-"))
+        { result = result.slice(1); 
+        let bits = ( 0 + result + (fracstr ? "." + fracstr : "")).split("");
+        for (i=bits.length-1; i>=0;i--)
+        {    
+            if (bits[i] === ".") 
+            {continue;}
+            if (bits[i]=="1")
+            {
+            bits[i]="0";
+            }
+            else if(bits[i]=="0")
+            {
+            bits[i]="1";
+            }
+        }
+        bits=bits.join("");
+        bits=bits.split("");
+        for (let i=bits.length; i>0; i--)
+        {
+            if (added)
+            {   
+              break; 
+            }
+            if (bits[i] === ".") 
+            {deci=i; continue;}
+            if (bits[i]=="1")
+            {
+              bits[i]="0";
+            }
+            else if(bits[i]=="0")
+            {
+              bits[i]="1";
+              added = true;
+            }
+        }
+          result = bits.join("");
+
+          { 
+            result=result.split("");
+            if(result[0]==="1" &&result[1]==="1")
+            {result[0]="";}
+            result=result.join("");
+          }
+          return result;
+        }
+        
+        else if (signed) {{result = "0" + result.toString();}}
+        
+        if (!signed || signed && result[0] ==0)
+        {return result + (fracstr ? "." + fracstr : "")}
+        return result;
+      }
+      
+      else
+      {
+        if (signed && int.startsWith("-")) { int.slice(1)}
+        if (base == 16) { index = 4;}
+        else if (base == 8 ) { index = 3;}
+        if (int !== undefined) {int = parseInt(int, base).toString(2);}
+        if(int1[0]==="") 
+        {
+          intmiss = index - int.length % index;
+          int = int.toString();
+          int = "1".repeat(intmiss) + int;
+        }
+        if(int1[0]==="0" || parseInt(int1[0]) <= base/2-1 )
+        {
+          int = "0" + int;
+        }
+          if (frac !== undefined && frac !=="0")
+          {
+            frac = parseInt(frac, base).toString(2);
+            if (frac && frac.length % index !==0 && frac !=="0")
+            { 
+              miss = index - frac.length % index
+              frac = "0".repeat(miss) + frac ; 
+            }
+          }
+        if (frac === "0") { return int;}
+        if (int ==="0") {return frac }
+        return int + "." + frac;
+      }
+    }
+
+    function convert() 
+    {
+      const value = input.value.trim().toUpperCase();
+      const base = parseFloat(baseSel.value);
+      let isSigned = sign.checked;
+        
+      errorDiv.textContent = "";
+
+      if (value === "") 
+      {
+        Object.values(outputs).forEach(o => o.textContent = "-");
+        return;
+      }
+
+      if (!isValidForBase(value, base, isSigned)) 
+      {
+        errorDiv.textContent = `Invalid input for base ${base}`;
+        Object.values(outputs).forEach(o => o.textContent = "-");
+        return;
+      }
+      const binary = tobin(value, base, isSigned);
+
+      outputs[2].textContent = binary;
+      outputs[8].textContent = toox(binary,8, isSigned);  
+      outputs[10].textContent = toDec(binary, isSigned);
+      outputs[16].textContent = toox(binary,16, isSigned);
+    }
+
+    input.addEventListener("input", convert);
+    baseSel.addEventListener("change", convert);
+    sign.addEventListener("change", convert);
+  </script>
+
+</body>
+</html>
