@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Base Calculator</title>
+  <style>
+    body 
+    {   
+      font-family: Arial, sans-serif;
+      background: #151515;
+      color: #eee;
+      padding: 30px;
+      padding-bottom: 180px;
+      bottom: 0;
+      margin: 0px;
+    }
+
+    .row 
+    {
+      display: flex;
+      gap: 30px;
+      margin-bottom: 8px;
+      align-items: center;
+    }
+
+    input 
+    {
+      flex: 1;
+      padding: 10px;
+      font-size: 16px;
+      background: #222;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+    }
+
+    select 
+    {
+      padding: 8px;
+      background: #222;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+    }
+
+    .result 
+    {
+      width: 200px;
+      background: #222;
+      padding: 10px;
+      border-radius: 5px;
+      text-align: right;
+    }
+
+    .error 
+    {
+      color: #ff6b6b;
+    }
+
+    #keypad 
+    {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      box-sizing: border-box;
+      padding: 16px;      
+      background: #1a1a1a;
+      border-top: 1px solid #333;
+      
+      display: grid;
+      grid-template-columns: 2fr 1fr 3fr 2fr; 
+      gap: 16px;
+    }
+
+    .keypad-group 
+    {
+      display: grid;
+      gap: 8px;
+      align-content: start;
+    }
+
+    .letters-column { grid-template-columns: repeat(2, 1fr); }
+    .bases-column { grid-template-columns: repeat(1, 1fr); }
+    .numbers-column { grid-template-columns: repeat(3, 1fr); }
+    .ops-column { grid-template-columns: repeat(2, 1fr); }
+
+    .key 
+    {
+      padding: 12px;
+      text-align: center;
+      background: #222;
+      border-radius: 6px;
+      cursor: pointer;
+      user-select: none;
+      font-weight: bold;
+    }
+
+    .key:hover { background: #333; }
+    .key.special { background: #444; }
+
+    .toggle-key 
+    {
+      grid-column: span 2;
+      background: #aa66cc;
+      color: #fff;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    button
+    {
+      
+      background: #333;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      font-family: arial;
+      padding: 12px;
+      margin-bottom: 20px;
+      margin: 0px 30; 
+    }
+
+    button:hover
+    { background: #222;}
+
+    .toggle-key:hover { background: #bb77dd; }
+    .toggle-key.active-signed { background: #ff4444; }
+  </style>
+</head>
+<body>
+<button id="swish2" class="button" onclick="move()">Switch to Base Converter</button>
+<div id="container"></div>
+<div id="keypad"></div>
+
+<script>
+function move()
+  {
+    window.location.href = "3123123.html"; 
+  }
+const container = document.getElementById("container");
+let rows = [];
+let issigned = false;
+
+function isVal(value, base, sign) 
+{
+  if (!value) { return false; }
+  const valid = "0123456789ABCDEF".slice(0, base);
+  let dotCount = 0; 
+  let signed = false;
+
+  if (value[0] === "-") {
+    if (!sign || base === 8 || base === 16 || base === 2) { return false; }
+    signed = true;
+  }
+
+  const valStr = signed ? value.slice(1) : value;
+  if (!valStr || valStr === ".") {return false;}
+
+  return valStr
+    .toUpperCase()
+    .split("")
+    .every((char) => 
+    {
+      if (char === ".") 
+      {
+        dotCount++; 
+        return dotCount <= 1;
+      }
+      return valid.includes(char);
+    });
+}
+
+const fSub = { '₂': '2', '₈': '8', '₁': '1', '₀': '0', '₆': '6' };
+function parse(value, sign) 
+{
+  const all = /([0-9A-F.-]+)([₀₁₂₆₈]+)/gi;
+
+  return value.replace(all, function(match, val, sub) 
+  {
+    let bStr = "";
+    const c = sub.split("");
+    
+    for (let i = 0; i < c.length; i++) 
+    {
+      const char = c[i];
+      bStr += fSub[char] || char;
+    }
+    const base = parseInt(bStr);
+
+    if (base < 2 || base > 16 || !isVal(val.toUpperCase(), base, sign)) 
+    {
+      throw new Error("error");
+    }
+
+    const bin = tobin(val.toUpperCase(), base, sign);
+    const dec = toDec(bin, sign);
+    
+    return dec;
+  });
+}
+
+function toDec(value, sign) 
+  {
+    let [int1, frac1] = value.split("."), int = int1 || "0",  frac = frac1 || "0";
+    let n = 0, p = 0, signed=sign, result=0, fracVal = 0;
+    if (signed && int[0] === "1") {n -= parseInt(int[0]);}
+    else {n = parseInt(int[0])}
+    p = int.length-1; 
+    if (int.length>1) {result = parseInt(int.slice(1), 2) ;}
+    
+    if (frac) 
+    {
+      for (let i = 0; i < frac.length; i++) 
+      {
+        let digit = parseInt(frac[i]);
+        fracVal += digit / Math.pow(2, i + 1);
+      }
+    } 
+    return fracVal ? result += fracVal + (n * Math.pow(2,p)) : result + (n * Math.pow(2,p));
+  }
+
+
+function toox(value, base, sign)
+{
+  let signed= sign, [int1, frac1] = value.split("."), int = int1 || "0";
+  let neg=int[0], frac = frac1 || "0", miss = 0, index = 0;
+  if (base == 16) { index = 4;}
+  else { index = 3;}
+
+  if (frac && frac.length % index !==0)
+  {
+    miss = index - frac.length % index
+    frac = frac + "0".repeat(miss)
+  }
+
+  if (signed)
+  {
+    if (int1[0]==="1" && int.length % index !==0)
+    {
+      intmiss = index - int.length % index;
+      int = "1".repeat(intmiss) + int;
+    }
+    
+    
+  }
+  int = parseInt(int, 2).toString(base).toUpperCase();
+
+  if(signed && int1[0]==="0")
+    {
+      intmiss = index - int.length % index;
+      int = "0" + int;
+    }
+  
+
+  if (frac!==undefined)
+  {frac = parseInt(frac, 2).toString(base).toUpperCase();}
+  return frac ?  int + "." + frac : int  ; 
+}
+
+//fixxxxxxxxxx
+function tobin(value, base, sign)
+{
+  if (base==2)
+  { if (value.startsWith("-"))
+    { value = value.slice(1)}
+    return value;}
+  let signed=sign, result, [int1, frac1] = value.split(".");
+  let int = int1 || "0", frac = frac1 || "0";
+  let added=false, pls="", memo=0, deci=0, miss=0, intmiss=0;
+    if (base===10)
+    { 
+    if (frac!==undefined && frac !=="") {frac = parseFloat("0."+ frac)};
+    let whole=0; let fracstr="", i=0;
+    while(frac && frac>0 && i<32)
+    {
+        frac*=2;
+        whole = Math.floor(frac);
+        fracstr += whole.toString();
+        frac-=whole;
+        i++
+    } 
+    result = parseInt(int).toString(2);
+    let frac2 = frac1 ? frac1.toString().length : 0
+    if (signed && int.startsWith("-"))
+    { result = result.slice(1); 
+    let bits = ( 0 + result + (fracstr ? "." + fracstr : "")).split("");
+    for (i=bits.length-1; i>=0;i--)
+    {    
+        if (bits[i] === ".") 
+        {continue;}
+        if (bits[i]=="1")
+        {
+        bits[i]="0";
+        }
+        else if(bits[i]=="0")
+        {
+        bits[i]="1";
+        }
+    }
+    bits=bits.join("");
+    bits=bits.split("");
+    for (let i=bits.length; i>0; i--)
+    {
+        if (added)
+        {   
+          break; 
+        }
+        if (bits[i] === ".") 
+        {deci=i; continue;}
+        if (bits[i]=="1")
+        {
+          bits[i]="0";
+        }
+        else if(bits[i]=="0")
+        {
+          bits[i]="1";
+          added = true;
+        }
+    }
+      result = bits.join("");
+
+      { 
+        result=result.split("");
+        if(result[0]==="1" &&result[1]==="1")
+        {result[0]="";}
+        result=result.join("");
+      }
+      return result;
+    }
+    
+    else if (signed) {{result = "0" + result.toString();}}
+    
+    if (!signed || signed && result[0] ==0)
+    {return result + (fracstr ? "." + fracstr : "")}
+    return result;
+  }
+  
+    else
+    {
+        if (signed && int.startsWith("-")) { int.slice(1)}
+        if (base == 16) { index = 4;}
+        else if (base == 8 ) { index = 3;}
+        if (int !== undefined) 
+        {
+            int = parseInt(int, base).toString(2);
+            if(int1[0]==="") 
+            {
+              intmiss = index - int.length % index;
+              int = int.toString();
+              int = "1".repeat(intmiss) + int;
+            }
+            if(int1[0]==="0" || parseInt(int1[0]) <= base/2-1 )
+            {
+              int = "0" + int;
+            }
+        }
+        
+        if (frac !== undefined && frac !=="0")
+        {
+          frac = parseInt(frac, base).toString(2);
+          if (frac && frac.length % index !==0 && frac !=="0")
+          { 
+            miss = index - frac.length % index
+            frac = "0".repeat(miss) + frac ; 
+          }
+        }
+        if (frac === "0") { return int;}
+        if (int ==="0") {return frac }
+        return int + "." + frac;
+    }
+}
+
+
+function update() 
+{
+  for (let i = 0; i < rows.length; i++) 
+  {
+    const row = rows[i];
+    const Input = row.input.value.trim();
+    const oBase = parseInt(row.baseSel.value);
+
+    if (Input === "") 
+    {
+      row.result.textContent = "";
+      continue;
+    }
+
+    try 
+    {
+      const decimal = parse(Input, issigned);
+      const calc = (new Function('"use strict"; return (' + decimal + ')')()).toString();
+      const bin = tobin(calc, 10, issigned);
+
+      let disp;
+      if (oBase === 10) {
+        disp = toDec(bin, issigned);
+      } else if (oBase === 8 || oBase === 16) {
+        disp = toox(bin, oBase, issigned);
+      } else if (oBase === 2) {
+        disp = bin;
+      }
+
+      row.result.textContent = disp;
+      row.result.classList.remove("error");
+
+    } catch (error) {
+      row.result.textContent = "Error";
+      row.result.classList.add("error");
+    }
+  }
+}
+
+let activeRow = null;
+let lastRow = null;
+  function createRow() 
+  {
+    lastRow = activeRow;
+    const raw = document.createElement("div");
+    raw.className = "row";
+
+    const inp = document.createElement("input");
+    const sel = document.createElement("select");
+    
+    const o2 = new Option("Base 2", "2", false, false);
+    const o8 = new Option("Base 8", "8", false, false);
+    const o10 = new Option("Base 10", "10", false, true);
+    const o16 = new Option("Base 16", "16", false, false);
+    
+    sel.appendChild(o2);
+    sel.appendChild(o8);
+    sel.appendChild(o10);
+    sel.appendChild(o16);
+
+    const res = document.createElement("div");
+    res.className = "result";
+
+    raw.appendChild(inp);
+    raw.appendChild(sel);
+    raw.appendChild(res);
+
+    container.appendChild(raw);
+    const newa = { 
+      input: inp, 
+      baseSel: sel, 
+      result: res 
+    };
+    rows.push(newa);
+    
+
+    inp.addEventListener("input", update);
+    sel.addEventListener("change", update);
+    inp.addEventListener("focus", function() { activeRow = newa; });
+
+    inp.focus();
+    return newa;
+  }
+
+const letter = ["A","B","C","D","E","F"];
+const num = ["7","8","9","4","5","6","1","2","3","0", ".", "Ans"];
+const basss = ["₂", "₈", "₁₀", "₁₆"];
+const ops = ["+", "-", "*", "/"];
+const idk = ["⌫", "Del", "Clear", "New"];
+
+const keypad = document.getElementById("keypad");
+
+const lGroup = document.createElement("div");
+lGroup.className = "keypad-group letters-column";
+
+
+for (const lett of letter)
+{
+  const b = document.createElement("div");
+  b.className = "key"
+  b.textContent = lett;
+  b.addEventListener("click", function() { clk(lett)});
+  lGroup.appendChild(b);
+}
+
+const swish = document.createElement("div");
+swish.className = "key toggle-key";
+swish.id = "sign-toggle";
+swish.textContent = "Unsigned";
+swish.addEventListener("click", function() 
+{
+  issigned = !issigned;
+  if (issigned === true) {
+    swish.textContent = "Signed";
+    swish.classList.add("active-signed");
+  } else {
+    swish.textContent = "Unsigned";
+    swish.classList.remove("active-signed");
+  }
+  update();
+}); ;
+lGroup.appendChild(swish);
+keypad.appendChild(lGroup);
+
+const bGroup = document.createElement("div");
+bGroup.className = "keypad-group bases-column";
+
+for (const ba of basss)
+{
+  const b = document.createElement("div");
+  b.className = "key special";
+  b.textContent = ba;
+  b.addEventListener("click", function() { clk(ba)});
+  bGroup.appendChild(b);
+}
+keypad.appendChild(bGroup);
+
+
+const nGroup = document.createElement("div");
+nGroup.className = "keypad-group numbers-column";
+
+for (const n of num)
+{
+  const b = document.createElement("div");
+  b.className = "key";
+  b.textContent = n;
+  b.addEventListener("click", function() { clk(n)});
+  nGroup.appendChild(b);
+}
+keypad.appendChild(nGroup);
+
+const oGroup = document.createElement("div");
+oGroup.className = "keypad-group ops-column";
+
+for (const o of ops)
+{
+  const b = document.createElement("div");
+  b.className = "key op";
+  b.textContent = o;
+  b.addEventListener("click", function() { clk(o)});
+  oGroup.appendChild(b);
+}
+
+for (const i of idk)
+{
+  const b = document.createElement("div");
+  b.className = "key special";
+  b.textContent = i;
+  b.addEventListener("click", function() { clk(i)});
+  oGroup.appendChild(b);
+}
+
+keypad.appendChild(oGroup);
+
+function clk(key) 
+{
+  if (activeRow === null) { return; }
+  const input = activeRow.input;
+  const index = rows.indexOf(activeRow);
+  const st = input.selectionStart;
+  const en = input.selectionEnd;
+  const tx = input.value;
+  
+  if (key === "Clear") { 
+    input.value = ""; 
+  } 
+  else if (key === "Del") 
+  {
+    
+    if (index > 0) 
+    {
+      rows.splice(index, 1);
+      activeRow.input.parentElement.remove();
+      activeRow = rows[rows.length - 1] || null;
+    }
+  } 
+  else if (key === "New") 
+  {
+    const lastRow = rows[rows.length - 1];
+    if (lastRow && lastRow.input.value.trim() !== "" && index <= 5) { createRow(); }
+  } 
+  else if (key === "Ans") 
+  { 
+    if (lastRow && lastRow.result.textContent !== "" && lastRow.result.textContent !== "Error") 
+    {
+      const answ = lastRow.result.textContent;
+      input.value = tx.slice(0, st) + insertText + tx.slice(en);
+      input.setSelectionRange(st + insertText.length, st + answ.length);
+      update(); 
+    }
+  }
+  else if (key === "⌫") 
+  { 
+    if (st !== en) {
+      input.value = tx.slice(0, st) + tx.slice(en);
+      input.setSelectionRange(st, st);
+    } else if (st > 0) {
+      const chunk = tx.slice(st - 2, st);
+      const shift = (chunk === "₁₀" || chunk === "₁₆") ? 2 : 1;
+      
+      input.value = tx.slice(0, st - shift) + tx.slice(st);
+      input.setSelectionRange(st - shift, st - shift);
+    }
+  } 
+  else 
+  { 
+    input.value = tx.slice(0, st) + key + tx.slice(en);
+    input.setSelectionRange(st + key.length, st + key.length);
+  }
+  input.focus();
+  update();
+}
+
+createRow();
+</script>
+
+</body>
+</html>
